@@ -1,4 +1,4 @@
-use bitcoincore_rpc::{Auth, Client, RpcApi};
+use bitcoincore_rpc::{json::GetBlockchainInfoResult, Auth, Client, RpcApi};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tauri::State;
@@ -13,6 +13,7 @@ pub struct Pet {
 pub struct AppState {
     pet: Mutex<Pet>,
     btc_client: Mutex<Client>,
+    last_block_checked: Mutex<u64>,
 }
 
 #[tauri::command]
@@ -33,20 +34,50 @@ pub fn feed_pet(state: State<AppState>) -> Pet {
 #[tauri::command]
 pub fn check_bitcoin_blocks(state: State<AppState>) -> Result<Pet, String> {
     let btc_client = state.btc_client.lock().unwrap();
-    let blockchain_info = btc_client
+    let blockchain_info: GetBlockchainInfoResult = btc_client
         .get_blockchain_info()
         .map_err(|e| e.to_string())?;
-    let current_height = blockchain_info.blocks;
+    let current_height: u64 = blockchain_info.blocks;
 
-    // TODO: Implement logic to track last checked block and calculate new eggs
-    // For now, we'll just add 1 egg per check as a placeholder
-    let new_eggs:u32 = 1;
+    let mut last_block_checked = state.last_block_checked.lock().unwrap();
+    let new_blocks: u64 = current_height - *last_block_checked;
+
+    let mut new_eggs: u32 = 0;
+
+    if new_blocks > 0 {
+        for block_height in *last_block_checked + 1..=current_height {
+            // TODO: include transaction fees from block specific data in block reward/egg calculation
+            // let block_hash = btc_client
+            //     .get_block_hash(block_height)
+            //     .map_err(|e| e.to_string())?;
+            // let block = btc_client
+            //     .get_block(&block_hash)
+            //     .map_err(|e| e.to_string())?;
+
+            let block_reward = calculate_block_reward(block_height);
+            
+            new_eggs += (block_reward * 10.0) as u32;
+        }
+
+        *last_block_checked = current_height;
+    }
 
     let mut pet = state.pet.lock().unwrap();
     pet.egg_count += new_eggs;
-    pet.hunger_level = std::cmp::min(pet.hunger_level + 5, 100);
+    // 5 is arbitrary, revisit later
+    pet.hunger_level = std::cmp::min(pet.hunger_level + (new_blocks as u32 * 5), 100);
 
     Ok(pet.clone())
+}
+
+fn calculate_block_reward(height: u64) -> f64 {
+    // by halvings excluding transaction fees
+    let halvings: u64 = height / 210_000;
+    if halvings >= 64 {
+        // lol imagine all bitcoins mined
+        return 0.0;
+    }
+    50.0 / 2_f64.powi(halvings as i32)
 }
 
 pub fn create_app_state() -> Result<AppState, Box<dyn std::error::Error>> {
@@ -55,6 +86,9 @@ pub fn create_app_state() -> Result<AppState, Box<dyn std::error::Error>> {
         Auth::UserPass("rpcuser".to_string(), "rpcpassword".to_string()),
     )?;
 
+    let blockchain_info: GetBlockchainInfoResult = btc_client.get_blockchain_info()?;
+    let current_height: u64 = blockchain_info.blocks;
+
     Ok(AppState {
         pet: Mutex::new(Pet {
             hunger_level: 0,
@@ -62,5 +96,6 @@ pub fn create_app_state() -> Result<AppState, Box<dyn std::error::Error>> {
             name: "Catagotchi".to_string(),
         }),
         btc_client: Mutex::new(btc_client),
+        last_block_checked: Mutex::new(current_height),
     })
 }

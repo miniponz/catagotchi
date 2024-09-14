@@ -14,9 +14,10 @@ fn greet(name: &str) -> String {
 
 fn main() {
     Builder::default()
-        .manage(pet::create_app_state().unwrap())
+        .manage(pet::create_app_state().expect("Failed to create app state"))
         .setup(|app| {
-            system_tray::run_background_task(app.handle());
+            let app_handle = app.handle();
+            system_tray::run_background_task(app_handle.clone());
             Ok(())
         })
         .system_tray(system_tray::create_system_tray())
