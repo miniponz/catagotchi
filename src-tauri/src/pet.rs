@@ -17,6 +17,12 @@ pub struct AppState {
 }
 
 #[tauri::command]
+pub fn greet(name: &str, state: State<AppState>) -> String {
+    let pet = state.pet.lock().unwrap();
+    format!("Hello, {}! You've been greeted by {}!", name, pet.name)
+}
+
+#[tauri::command]
 pub fn get_pet_state(state: State<'_, AppState>) -> Pet {
     state.pet.lock().unwrap().clone()
 }
@@ -82,8 +88,9 @@ fn calculate_block_reward(height: u64) -> f64 {
 
 pub fn create_app_state() -> Result<AppState, Box<dyn std::error::Error>> {
     let btc_client = Client::new(
-        "http://localhost:8332",
-        Auth::UserPass("rpcuser".to_string(), "rpcpassword".to_string()),
+        // TODO: use env to set this to testnet/mainnet
+        "http://127.0.0.1:18332",
+        Auth::UserPass("your_rpc_username".to_string(), "your_rpc_password".to_string()),
     )?;
 
     let blockchain_info: GetBlockchainInfoResult = btc_client.get_blockchain_info()?;

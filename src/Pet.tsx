@@ -31,7 +31,6 @@ const Pet: React.FC = () => {
         // Poll for updates to petInfo
         const fetchPetState = async () => {
             const petState = await invoke("get_pet_state");
-            console.log(petState);
             setPetInfo(petState as PetInfo);
           };
       
@@ -64,8 +63,7 @@ const Pet: React.FC = () => {
 
     return (
         <div>
-            <h1>Your Pet:</h1>
-            <h2>{petInfo.name}</h2>
+            <h2>My name is{petInfo.name}</h2>
             <div>
                 {/* TODO: show different images based on hunger level */}
                 <img src={setPetImage(petInfo.hunger_level)} alt="Digital Pet" style={{

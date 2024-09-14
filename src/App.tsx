@@ -14,7 +14,7 @@ function App() {
 
   return (
     <div className="container">
-      <h1>Welcome to Node Pets!</h1>
+      <h1>Hi! I'm your node fren!</h1>
 
       <Pet />
 

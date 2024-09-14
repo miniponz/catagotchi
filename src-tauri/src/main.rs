@@ -3,14 +3,7 @@
 mod pet;
 mod system_tray;
 
-use tauri::{Builder, Manager};
-
-// Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
-#[tauri::command]
-fn greet(name: &str) -> String {
-    // TODO: update to show a greeting from pet
-    format!("Hello, {}! You've been greeted from Rust!", name)
-}
+use tauri::{Builder, Manager, State};
 
 fn main() {
     Builder::default()
@@ -26,7 +19,7 @@ fn main() {
             pet::get_pet_state,
             pet::feed_pet,
             pet::check_bitcoin_blocks,
-            greet
+            pet::greet,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
