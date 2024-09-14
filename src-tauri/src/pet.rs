@@ -62,7 +62,7 @@ pub fn check_bitcoin_blocks(state: State<AppState>) -> Result<Pet, String> {
 
             let block_reward = calculate_block_reward(block_height);
             
-            new_eggs += (block_reward * 10.0) as u32;
+            new_eggs += (block_reward * 10.0).round() as u32;
         }
 
         *last_block_checked = current_height;
